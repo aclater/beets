@@ -121,6 +121,9 @@ Bug fixes
 - :doc:`plugins/titlecase`: Fix characters being dropped or duplicated when
   ``separators`` is combined with a ``replace`` rule that changes the length of
   the text. :bug:`6300`
+- :doc:`plugins/edit`: Add a Back option to the "edit Candidates" prompt so it
+  is possible to return to the importer prompt without picking a candidate.
+  :bug:`6701`
 
 For plugin developers
 ~~~~~~~~~~~~~~~~~~~~~
