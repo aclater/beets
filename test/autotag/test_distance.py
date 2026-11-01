@@ -187,6 +187,30 @@ class TestTrackDistance:
         dist = track_distance(item, info)
         assert bool(dist) == expected_penalty, dist._penalties
 
+    def test_release_track_id_of_other_source(self):
+        # A source without release track IDs stores its track ID as the
+        # item's release track ID.
+        other = TrackInfo(
+            title="title", track_id="other-1", data_source="Other"
+        )
+        item = Item(**other.item_data)
+        assert item.mb_releasetrackid == "other-1"
+
+        # Reimporting from that source: its tracks have no release track ID,
+        # so only the recording ID is compared, and it matches.
+        dist = track_distance(item, other)
+        assert dist._penalties["track_id"] == [0.0], dist._penalties
+
+        # A MusicBrainz track's release track ID differs, which is penalized.
+        musicbrainz = TrackInfo(
+            title="title",
+            track_id="recording-1",
+            release_track_id="release-track-1",
+            data_source="MusicBrainz",
+        )
+        dist = track_distance(item, musicbrainz)
+        assert dist._penalties["track_id"] == [1.0, 1.0], dist._penalties
+
 
 class TestAlbumDistance:
     @pytest.fixture(scope="class")
