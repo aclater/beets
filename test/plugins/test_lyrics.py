@@ -159,9 +159,9 @@ class TestHtml:
 
 class TestSearchBackend:
     @pytest.fixture
-    def backend(self, dist_thresh):
+    def backend(self, config, dist_thresh):
+        config["lyrics"]["dist_thresh"] = dist_thresh
         plugin = lyrics.LyricsPlugin()
-        plugin.config.set({"dist_thresh": dist_thresh})
         return lyrics.SearchBackend(plugin.config, plugin._log)
 
     @pytest.mark.parametrize(
@@ -360,6 +360,24 @@ class TestLyricsPlugin(LyricsPluginMixin):
         with pytest.raises(AttributeError):
             item.lyrics_translation_language
 
+    def test_store_instrumental_lyrics_info(
+        self, monkeypatch, helper, lyrics_plugin
+    ):
+        lyrics = Lyrics(
+            "[Instrumental]", "lrclib", url="https://lrclib.net/api/1"
+        )
+        monkeypatch.setattr(lyrics_plugin, "find_lyrics", lambda _: lyrics)
+        item = helper.add_item(id=1, lyrics="")
+
+        lyrics_plugin.add_item_lyrics(item, False)
+
+        item = helper.lib.get_item(item.id)
+
+        assert item.lyrics == ""
+        assert item.lyrics_instrumental == "1"
+        assert item.lyrics_backend == lyrics.backend
+        assert item.lyrics_url == lyrics.url
+
     def test_imported_skips_auto_ignored_items(
         self, lyrics_plugin, monkeypatch
     ):
@@ -400,7 +418,8 @@ class LyricsBackendTest(LyricsPluginMixin):
 @pytest.mark.on_lyrics_update
 class TestLyricsSources(LyricsBackendTest):
     @pytest.fixture(scope="class")
-    def plugin_config(self):
+    @classmethod
+    def plugin_config(cls):
         return {"google_API_key": "test", "synced": True}
 
     @pytest.fixture(
@@ -467,7 +486,8 @@ class TestGoogleLyrics(LyricsBackendTest):
     """Test scraping heuristics on a fake html page."""
 
     @pytest.fixture(scope="class")
-    def backend_name(self):
+    @classmethod
+    def backend_name(cls):
         return "google"
 
     @pytest.fixture
@@ -475,7 +495,8 @@ class TestGoogleLyrics(LyricsBackendTest):
         return {"google_API_key": "test"}
 
     @pytest.fixture(scope="class")
-    def file_name(self):
+    @classmethod
+    def file_name(cls):
         return "examplecom/beetssong"
 
     @pytest.fixture
@@ -535,7 +556,8 @@ class TestGoogleLyrics(LyricsBackendTest):
 
 class TestGeniusLyrics(LyricsBackendTest):
     @pytest.fixture(scope="class")
-    def backend_name(self):
+    @classmethod
+    def backend_name(cls):
         return "genius"
 
     @pytest.mark.parametrize(
@@ -554,7 +576,8 @@ class TestGeniusLyrics(LyricsBackendTest):
 
 class TestTekstowoLyrics(LyricsBackendTest):
     @pytest.fixture(scope="class")
-    def backend_name(self):
+    @classmethod
+    def backend_name(cls):
         return "tekstowo"
 
     @pytest.mark.parametrize(
@@ -590,7 +613,8 @@ class TestLRCLibLyrics(LyricsBackendTest):
     SYNCED = "[00:00.00] synced"
 
     @pytest.fixture(scope="class")
-    def backend_name(self):
+    @classmethod
+    def backend_name(cls):
         return "lrclib"
 
     @pytest.fixture
@@ -720,7 +744,8 @@ class TestLRCMuxLyrics(LyricsBackendTest):
     PLAIN = "plain"
 
     @pytest.fixture(scope="class")
-    def backend_name(self):
+    @classmethod
+    def backend_name(cls):
         return "lrcmux"
 
     @pytest.mark.parametrize(
