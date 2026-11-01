@@ -132,6 +132,8 @@ Bug fixes
   components instead of a string prefix, so ``pod`` no longer also skips
   ``podcasts``. A configured value with a trailing slash is matched correctly as
   well.
+- :doc:`plugins/replaygain`: Fix ReplayGain metaflac backend altering input
+  files. :bug:`6915`
 
 For plugin developers
 ~~~~~~~~~~~~~~~~~~~~~
