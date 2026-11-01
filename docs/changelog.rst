@@ -44,6 +44,8 @@ New features
   albumartist, the plugin now attempts to fetch genres for each artist listed in
   the multi-valued ``albumartists`` field before falling back to the artist
   source. :bug:`6238`
+- :doc:`plugins/mpdupdate`: Add support for connecting to mpd via abstract
+  socket.
 
 Bug fixes
 ~~~~~~~~~
