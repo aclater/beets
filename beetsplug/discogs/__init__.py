@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import confuse
 import requests
 from discogs_client import Client, Master, Release
-from discogs_client.exceptions import DiscogsAPIError
+from discogs_client.exceptions import DiscogsAPIError, MalformedResponseError
 
 import beets
 import beets.ui
@@ -80,6 +80,8 @@ FIELDS_TO_DISCOGS_KEYS = {
     "media": "format",
     "year": "year",
 }
+
+MEDIA_FORMAT_ALIASES = {"digital media", "web"}
 
 
 def parse_release_date(
@@ -302,9 +304,17 @@ class DiscogsPlugin(SearchApiMetadataSourcePlugin[IDResponse]):
             return query, filters
 
         for tag, api_field in self.extra_discogs_field_by_tag.items():
-            most_common, _count = util.plurality(
-                item.get(tag) for item in items
-            )
+            values = (item.get(tag) for item in items)
+
+            if tag == "media":
+                values = (
+                    "File"
+                    if str(value).casefold() in MEDIA_FORMAT_ALIASES
+                    else value
+                    for value in values
+                )
+
+            most_common, _count = util.plurality(values)
             if most_common is None:
                 continue
 
@@ -326,10 +336,8 @@ class DiscogsPlugin(SearchApiMetadataSourcePlugin[IDResponse]):
 
         try:
             return search()
-        except json.JSONDecodeError:
-            self._log.debug(
-                "Discogs returned an invalid JSON search response; retrying"
-            )
+        except MalformedResponseError as exc:
+            self._log.debug("{}; retrying", exc.msg)
             return search()
 
     @cache
