@@ -9,22 +9,56 @@ below!
 Unreleased
 ----------
 
+Beets now requires Python 3.11 or later since support for EOL Python 3.10 has
+been dropped.
+
+New features
+~~~~~~~~~~~~
+
+- :ref:`tunique` (``%tunique{}``): New path template function to disambiguate
+  tracks within the same album that share the same title (e.g., identical-titled
+  tracks on different discs). It has the same arguments as :ref:`%aunique
+  <aunique>`; the default identifiers are ``title`` and the default
+  disambiguators are ``track disc artist``.
+- :doc:`plugins/lastgenre`: Improve original-genre fallback by applying aliases
+  before whitelist filtering, while preserving existing genres regardless of the
+  configured count. :bug:`6890`
+- :doc:`plugins/subsonicupdate`: Add a ``subsonicupdate`` command that requests
+  a library update from the Subsonic server on demand, and an ``auto`` option
+  that disables the updates triggered by library and smart playlist changes.
+  :bug:`6741`
+- Add ``-l / --limit LIMIT`` to other query-based commands. Commands that
+  already use ``-l`` for another purpose accept ``--limit LIMIT`` only.
+- The ``-c``/``--config`` command-line option can now be given more than once.
+  Each file is overlaid on top of the previous ones, so a configuration can be
+  composed from several files in a single run.
+- New :ref:`empty_component_replace` option: a string that fills in for an empty
+  path component, so a path template field that resolves to nothing no longer
+  collapses the directory level it would have created. Unset by default, which
+  keeps the current behaviour. :bug:`359`
+- :doc:`plugins/bpd`, :doc:`plugins/replaygain`: Support GStreamer on Windows,
+  where the ``bpd`` and ``replaygain`` extras now install GStreamer, its plugins
+  and the Python bindings, so that neither plugin needs a separate GStreamer
+  installation there.
+- :doc:`plugins/lastgenre`: When no album genre is found for the primary
+  albumartist, the plugin now attempts to fetch genres for each artist listed in
+  the multi-valued ``albumartists`` field before falling back to the artist
+  source. :bug:`6238`
+- :doc:`plugins/mpdupdate`: Add support for connecting to mpd via abstract
+  socket.
+
 Bug fixes
 ~~~~~~~~~
 
+- Metadata source plugins such as :doc:`plugins/musicbrainz` no longer print a
+  full traceback at error level when a search fails because the service is
+  unreachable. The error message is logged on its own, and the traceback is kept
+  at debug level. :bug:`6960`
+- :doc:`plugins/absubmit`: Handle invalid JSON output from the extractor
+  gracefully by decoding with error handling and skipping tracks that produce
+  unparseable data, instead of crashing. :bug:`3527`
 - :doc:`plugins/mbsync`: Set ``medium_total`` to the number of tracks remaining
   after configured data and video filters. :bug:`6836`
-- :doc:`plugins/edit`: Add a Back option to the "edit Candidates" prompt so it
-  is possible to return to the importer prompt without picking a candidate.
-  :bug:`6701`
-
-..
-    New features
-    ~~~~~~~~~~~~
-
-Bug fixes
-~~~~~~~~~
-
 - :doc:`plugins/chroma`: Fix file descriptor exhaustion when fingerprinting
   large libraries. The chroma plugin now uses the ``fpcalc`` binary directly
   (via ``force_fpcalc=True``) instead of routing through audioread's GStreamer
@@ -37,14 +71,77 @@ Bug fixes
   file was read-only. :bug:`6954`
 - :doc:`plugins/discogs`: Normalize ``Digital Media`` and ``WEB`` to Discogs'
   ``File`` format when using ``media`` in ``extra_tags`` search filters.
+- Fix word wrapping of colored diff output for a word containing two or more
+  separately-highlighted spans, which was incorrectly split into two words at
+  the second highlighted span.
+- Improve the error message when the library database cannot be opened (for
+  example due to permissions or an unwritable path), and fix the ``cannot not``
+  typo in the generic database open failure message. :bug:`1676`
+- :doc:`plugins/lastgenre`: An empty or null ``whitelist`` or ``canonical``
+  setting now raises a clear error instead of silently falling back to the
+  default file. Use ``yes``, ``no`` or a file path. :bug:`5994`
+- Stop replacing ``\`` with ``/`` in ``util.path_as_posix`` on Unix, since ``\``
+  is a valid character in filenames on Unix. :bug:`7062`
+- :doc:`plugins/fetchart`: Request modern ``3000x3000bb`` high-resolution
+  artwork from the iTunes Store instead of deprecated ``100000x100000-999``,
+  fixing an issue where Apple's CDN rejected image requests with HTTP 400 Bad
+  Request.
+- :doc:`plugins/lyrics`: Store ``lyrics_instrumental``, ``lyrics_backend`` and
+  ``lyrics_url`` for instrumental matches on items without lyrics, which were
+  previously discarded.
+- :doc:`plugins/mbsubmit`: The "Print tracks" (``p``) and "Open files with
+  Picard" (``o``) prompt choices are offered again when the importer has no
+  recommendation for a match (for example when no candidates were found).
+  :bug:`7031`
+- :doc:`plugins/fetchart`: Do not offer the same local art file twice when a
+  subdirectory holds a file named like one in the album folder.
+- :doc:`plugins/hook`: Keep backslashes intact when splitting hook commands on
+  Windows, where they separate path components rather than escape the next
+  character, so that commands taking an absolute path now receive it in one
+  piece.
+- :doc:`plugins/play`: Keep a path absolute instead of crashing when
+  ``relative_to`` points at another Windows drive, where no relative path
+  between the two exists, and warn about the paths that were left alone.
+- :doc:`plugins/bpd`: Report song paths with ``/`` separators on every platform,
+  so that the paths clients receive can be used to address songs on Windows too.
+- :ref:`import-cmd`: Detect the format of extension-less files on Windows, where
+  the ``ffprobe`` output was left unparsed because of its line endings.
+- Detect ImageMagick on Windows: the version probe kept looking for ``convert``
+  after ``magick`` had answered and picked up the unrelated built-in Windows
+  tool of that name, reporting the backend as unavailable. :bug:`5414`
+- :ref:`update-cmd`: A filesystem error while moving an item or album is now
+  reported and the update continues with the rest of the library, instead of
+  aborting and leaving it partially updated. :bug:`2419`
+- :doc:`plugins/deezer`: ``deezerupdate`` now stores each track's Deezer rank
+  instead of ``1``. :bug:`7106`
+- :doc:`plugins/replaygain`: Stop the exception watcher thread from busy-waiting
+  while the thread pool is open. It held a CPU core at 100% and starved the
+  other threads, making ``beet replaygain`` on a large library run for hours
+  without starting any analysis. :bug:`5449`
+- :doc:`plugins/titlecase`: Fix characters being dropped or duplicated when
+  ``separators`` is combined with a ``replace`` rule that changes the length of
+  the text. :bug:`6300`
+- :doc:`plugins/edit`: Add a Back option to the "edit Candidates" prompt so it
+  is possible to return to the importer prompt without picking a candidate.
+  :bug:`6701`
 
-..
-    For plugin developers
-    ~~~~~~~~~~~~~~~~~~~~~
+For plugin developers
+~~~~~~~~~~~~~~~~~~~~~
 
-..
-    Other changes
-    ~~~~~~~~~~~~~
+- ``ArtResizer.resize``, ``ArtResizer.deinterlace`` and ``ArtResizer.reformat``
+  now expect :class:`pathlib.Path` arguments. ``str`` and ``bytes`` paths keep
+  working and are returned in the representation they were given in, but emit a
+  :class:`DeprecationWarning` and will be removed in 3.0.0.
+- ``beetsplug._utils.art.embed_item`` and
+  ``beetsplug._utils.art.mediafile_image`` now expect :class:`pathlib.Path`
+  arguments, deprecating ``str`` and ``bytes`` in the same way.
+
+Other changes
+~~~~~~~~~~~~~
+
+- :doc:`plugins/thumbnails`: Drop the ``pyxdg`` dependency in favour of
+  ``platformdirs``, which beets already requires.
+- Beets now officially supports Python 3.15.
 
 2.14.1 (September 17, 2026)
 ---------------------------
