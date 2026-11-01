@@ -629,15 +629,17 @@ class MusicBrainzPlugin(
 
     @staticmethod
     def _album_media(medias: set[str | None]) -> str | None:
-        """Return the release's media for the album: the media's shared format,
+        """Return the release's media for the album.
+
+        The media's shared format,
         else their common base when they differ only in a parenthetical (the
         layers of a hybrid SACD or the sides of a DualDisc), else ``Media``.
         """
         if len(medias) == 1:
             return medias.pop()
-        if len(bases := {(m or "").split(" (")[0] for m in medias}) == 1:
-            return bases.pop() or "Media"
-        return "Media"
+
+        bases = {m.partition(" (")[0] if m else None for m in medias}
+        return bases.pop() if len(bases) == 1 else "Media"
 
     def album_info(self, release: Release) -> AlbumInfo:
         """Takes a MusicBrainz release result dictionary and returns a beets
